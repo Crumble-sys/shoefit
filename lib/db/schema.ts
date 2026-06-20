@@ -1,10 +1,11 @@
 import { pgTable, text, timestamp, boolean, integer, numeric } from 'drizzle-orm/pg-core'
 
 // --- Better Auth required tables -------------------------------------------
+// Column names are camelCase to match Better Auth's defaults. Do not rename.
 
 export const user = pgTable('user', {
   id: text('id').primaryKey(),
-  name: text('name'),
+  name: text('name').notNull(),
   email: text('email').notNull().unique(),
   emailVerified: boolean('emailVerified').notNull().default(false),
   image: text('image'),
@@ -27,19 +28,18 @@ export const session = pgTable('session', {
 
 export const account = pgTable('account', {
   id: text('id').primaryKey(),
+  accountId: text('accountId').notNull(),
+  providerId: text('providerId').notNull(),
   userId: text('userId')
     .notNull()
     .references(() => user.id, { onDelete: 'cascade' }),
-  type: text('type').notNull(),
-  provider: text('provider').notNull(),
-  providerAccountId: text('providerAccountId').notNull(),
-  refreshToken: text('refreshToken'),
   accessToken: text('accessToken'),
-  expiresAt: integer('expiresAt'),
-  tokenType: text('tokenType'),
-  scope: text('scope'),
+  refreshToken: text('refreshToken'),
   idToken: text('idToken'),
-  sessionState: text('sessionState'),
+  accessTokenExpiresAt: timestamp('accessTokenExpiresAt'),
+  refreshTokenExpiresAt: timestamp('refreshTokenExpiresAt'),
+  scope: text('scope'),
+  password: text('password'),
   createdAt: timestamp('createdAt').notNull().defaultNow(),
   updatedAt: timestamp('updatedAt').notNull().defaultNow(),
 })
@@ -47,9 +47,10 @@ export const account = pgTable('account', {
 export const verification = pgTable('verification', {
   id: text('id').primaryKey(),
   identifier: text('identifier').notNull(),
-  token: text('token').notNull().unique(),
+  value: text('value').notNull(),
   expiresAt: timestamp('expiresAt').notNull(),
   createdAt: timestamp('createdAt').defaultNow(),
+  updatedAt: timestamp('updatedAt').defaultNow(),
 })
 
 // --- App tables: E-commerce ---
@@ -68,7 +69,7 @@ export const products = pgTable('products', {
 
 export const cartItems = pgTable('cart_items', {
   id: text('id').primaryKey(),
-  userId: text('userId').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  userId: text('userId').notNull(),
   productId: integer('productId').notNull().references(() => products.id, { onDelete: 'cascade' }),
   quantity: integer('quantity').notNull().default(1),
   createdAt: timestamp('createdAt').notNull().defaultNow(),
@@ -77,8 +78,8 @@ export const cartItems = pgTable('cart_items', {
 
 export const orders = pgTable('orders', {
   id: text('id').primaryKey(),
-  userId: text('userId').notNull().references(() => user.id, { onDelete: 'cascade' }),
-  totalPrice: numeric('totalPrice').notNull(),
+  userId: text('userId').notNull(),
+  totalPrice: numeric('totalPrice', { precision: 10, scale: 2 }).notNull(),
   status: text('status').notNull().default('pending'),
   paymentStatus: text('paymentStatus').notNull().default('pending'),
   shippingAddress: text('shippingAddress'),
