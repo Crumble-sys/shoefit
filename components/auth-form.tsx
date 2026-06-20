@@ -28,12 +28,9 @@ export function AuthForm({ mode }: { mode: 'sign-in' | 'sign-up' }) {
         ? await authClient.signUp.email({ email, password, name })
         : await authClient.signIn.email({ email, password })
 
-      console.log('[v0] Auth result:', result)
-
       setLoading(false)
 
       if (result.error) {
-        console.log('[v0] Auth error:', result.error)
         setError(result.error.message ?? 'Something went wrong')
         return
       }
@@ -41,7 +38,6 @@ export function AuthForm({ mode }: { mode: 'sign-in' | 'sign-up' }) {
       router.push('/')
       router.refresh()
     } catch (err) {
-      console.log('[v0] Catch error:', err)
       setLoading(false)
       setError(err instanceof Error ? err.message : 'Something went wrong')
     }

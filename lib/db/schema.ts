@@ -27,36 +27,38 @@ export const session = pgTable('session', {
 
 export const account = pgTable('account', {
   id: text('id').primaryKey(),
-  accountId: text('accountId').notNull(),
+  userId: text('userId')
+    .notNull()
+    .references(() => user.id, { onDelete: 'cascade' }),
+  type: text('type').notNull(),
   provider: text('provider').notNull(),
   providerAccountId: text('providerAccountId').notNull(),
   refreshToken: text('refreshToken'),
   accessToken: text('accessToken'),
-  expiresAt: timestamp('expiresAt'),
-  password: text('password'),
+  expiresAt: integer('expiresAt'),
+  tokenType: text('tokenType'),
+  scope: text('scope'),
+  idToken: text('idToken'),
+  sessionState: text('sessionState'),
   createdAt: timestamp('createdAt').notNull().defaultNow(),
   updatedAt: timestamp('updatedAt').notNull().defaultNow(),
-  userId: text('userId')
-    .notNull()
-    .references(() => user.id, { onDelete: 'cascade' }),
 })
 
 export const verification = pgTable('verification', {
   id: text('id').primaryKey(),
   identifier: text('identifier').notNull(),
-  value: text('value').notNull(),
+  token: text('token').notNull().unique(),
   expiresAt: timestamp('expiresAt').notNull(),
   createdAt: timestamp('createdAt').defaultNow(),
-  updatedAt: timestamp('updatedAt').defaultNow(),
 })
 
 // --- App tables: E-commerce ---
 
 export const products = pgTable('products', {
-  id: text('id').primaryKey(),
+  id: integer('id').primaryKey(),
   name: text('name').notNull(),
   description: text('description'),
-  price: numeric('price').notNull(),
+  price: numeric('price', { precision: 10, scale: 2 }).notNull(),
   image: text('image'),
   category: text('category'),
   stock: integer('stock').notNull().default(0),
@@ -67,7 +69,7 @@ export const products = pgTable('products', {
 export const cartItems = pgTable('cart_items', {
   id: text('id').primaryKey(),
   userId: text('userId').notNull().references(() => user.id, { onDelete: 'cascade' }),
-  productId: text('productId').notNull().references(() => products.id, { onDelete: 'cascade' }),
+  productId: integer('productId').notNull().references(() => products.id, { onDelete: 'cascade' }),
   quantity: integer('quantity').notNull().default(1),
   createdAt: timestamp('createdAt').notNull().defaultNow(),
   updatedAt: timestamp('updatedAt').notNull().defaultNow(),
@@ -87,8 +89,8 @@ export const orders = pgTable('orders', {
 export const orderItems = pgTable('order_items', {
   id: text('id').primaryKey(),
   orderId: text('orderId').notNull().references(() => orders.id, { onDelete: 'cascade' }),
-  productId: text('productId').notNull().references(() => products.id),
+  productId: integer('productId').notNull().references(() => products.id),
   quantity: integer('quantity').notNull(),
-  price: numeric('price').notNull(),
+  price: numeric('price', { precision: 10, scale: 2 }).notNull(),
   createdAt: timestamp('createdAt').notNull().defaultNow(),
 })
