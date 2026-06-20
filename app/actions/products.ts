@@ -2,7 +2,7 @@
 
 import { db } from '@/lib/db'
 import { products } from '@/lib/db/schema'
-import { desc } from 'drizzle-orm'
+import { desc, eq } from 'drizzle-orm'
 
 export async function getProducts() {
   return await db
@@ -11,11 +11,11 @@ export async function getProducts() {
     .orderBy(desc(products.createdAt))
 }
 
-export async function getProductById(id: string) {
+export async function getProductById(id: number) {
   const result = await db
     .select()
     .from(products)
-    .where((p: any) => p.id === id)
+    .where(eq(products.id, id))
     .limit(1)
   
   return result[0] || null
@@ -25,5 +25,5 @@ export async function getProductsByCategory(category: string) {
   return await db
     .select()
     .from(products)
-    .where((p: any) => p.category === category)
+    .where(eq(products.category, category))
 }
