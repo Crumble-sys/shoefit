@@ -1,55 +1,59 @@
-import { pgTable, text, timestamp, boolean, integer, numeric } from 'drizzle-orm/pg-core'
+import { pgTable, text, timestamp, boolean, integer, numeric, uuid } from 'drizzle-orm/pg-core'
 
-// --- Better Auth required tables -------------------------------------------
+// --- Better Auth required tables (neon_auth schema) ---
 
 export const user = pgTable('user', {
-  id: text('id').primaryKey(),
+  id: uuid('id').primaryKey().defaultRandom(),
   name: text('name'),
   email: text('email').notNull().unique(),
-  emailVerified: boolean('emailVerified').notNull().default(false),
+  emailVerified: boolean('emailVerified'),
   image: text('image'),
-  createdAt: timestamp('createdAt').notNull().defaultNow(),
-  updatedAt: timestamp('updatedAt').notNull().defaultNow(),
-})
+  role: text('role'),
+  banned: boolean('banned'),
+  banReason: text('banReason'),
+  banExpires: timestamp('banExpires', { withTimezone: true }),
+  createdAt: timestamp('createdAt', { withTimezone: true }),
+  updatedAt: timestamp('updatedAt', { withTimezone: true }),
+}, (table) => ({
+  emailIdx: undefined, // Neon manages this
+}))
 
 export const session = pgTable('session', {
-  id: text('id').primaryKey(),
-  expiresAt: timestamp('expiresAt').notNull(),
+  id: uuid('id').primaryKey().defaultRandom(),
+  expiresAt: timestamp('expiresAt', { withTimezone: true }).notNull(),
   token: text('token').notNull().unique(),
-  createdAt: timestamp('createdAt').notNull().defaultNow(),
-  updatedAt: timestamp('updatedAt').notNull().defaultNow(),
+  createdAt: timestamp('createdAt', { withTimezone: true }),
+  updatedAt: timestamp('updatedAt', { withTimezone: true }),
   ipAddress: text('ipAddress'),
   userAgent: text('userAgent'),
-  userId: text('userId')
-    .notNull()
-    .references(() => user.id, { onDelete: 'cascade' }),
+  userId: uuid('userId').notNull(),
+  activeOrganizationId: text('activeOrganizationId'),
+  impersonatedBy: text('impersonatedBy'),
 })
 
 export const account = pgTable('account', {
-  id: text('id').primaryKey(),
-  userId: text('userId')
-    .notNull()
-    .references(() => user.id, { onDelete: 'cascade' }),
-  type: text('type').notNull(),
-  provider: text('provider').notNull(),
-  providerAccountId: text('providerAccountId').notNull(),
-  refreshToken: text('refreshToken'),
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('userId').notNull(),
+  providerId: text('providerId').notNull(),
+  accountId: text('accountId').notNull(),
+  password: text('password'),
   accessToken: text('accessToken'),
-  expiresAt: integer('expiresAt'),
-  tokenType: text('tokenType'),
-  scope: text('scope'),
+  refreshToken: text('refreshToken'),
   idToken: text('idToken'),
-  sessionState: text('sessionState'),
-  createdAt: timestamp('createdAt').notNull().defaultNow(),
-  updatedAt: timestamp('updatedAt').notNull().defaultNow(),
+  accessTokenExpiresAt: timestamp('accessTokenExpiresAt', { withTimezone: true }),
+  refreshTokenExpiresAt: timestamp('refreshTokenExpiresAt', { withTimezone: true }),
+  scope: text('scope'),
+  createdAt: timestamp('createdAt', { withTimezone: true }),
+  updatedAt: timestamp('updatedAt', { withTimezone: true }),
 })
 
 export const verification = pgTable('verification', {
-  id: text('id').primaryKey(),
+  id: uuid('id').primaryKey().defaultRandom(),
   identifier: text('identifier').notNull(),
-  token: text('token').notNull().unique(),
-  expiresAt: timestamp('expiresAt').notNull(),
-  createdAt: timestamp('createdAt').defaultNow(),
+  value: text('value').notNull(),
+  expiresAt: timestamp('expiresAt', { withTimezone: true }).notNull(),
+  createdAt: timestamp('createdAt', { withTimezone: true }),
+  updatedAt: timestamp('updatedAt', { withTimezone: true }),
 })
 
 // --- App tables: E-commerce ---
@@ -67,8 +71,8 @@ export const products = pgTable('products', {
 })
 
 export const cartItems = pgTable('cart_items', {
-  id: text('id').primaryKey(),
-  userId: text('userId').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('userId').notNull(),
   productId: integer('productId').notNull().references(() => products.id, { onDelete: 'cascade' }),
   quantity: integer('quantity').notNull().default(1),
   createdAt: timestamp('createdAt').notNull().defaultNow(),
@@ -76,9 +80,9 @@ export const cartItems = pgTable('cart_items', {
 })
 
 export const orders = pgTable('orders', {
-  id: text('id').primaryKey(),
-  userId: text('userId').notNull().references(() => user.id, { onDelete: 'cascade' }),
-  totalPrice: numeric('totalPrice').notNull(),
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('userId').notNull(),
+  totalPrice: numeric('totalPrice', { precision: 10, scale: 2 }).notNull(),
   status: text('status').notNull().default('pending'),
   paymentStatus: text('paymentStatus').notNull().default('pending'),
   shippingAddress: text('shippingAddress'),
@@ -87,8 +91,8 @@ export const orders = pgTable('orders', {
 })
 
 export const orderItems = pgTable('order_items', {
-  id: text('id').primaryKey(),
-  orderId: text('orderId').notNull().references(() => orders.id, { onDelete: 'cascade' }),
+  id: uuid('id').primaryKey().defaultRandom(),
+  orderId: uuid('orderId').notNull().references(() => orders.id, { onDelete: 'cascade' }),
   productId: integer('productId').notNull().references(() => products.id),
   quantity: integer('quantity').notNull(),
   price: numeric('price', { precision: 10, scale: 2 }).notNull(),
